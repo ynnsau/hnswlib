@@ -713,7 +713,11 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
     }
 
 
-    void loadIndex(const std::string &location, SpaceInterface<dist_t> *s, size_t max_elements_i = 0) {
+    void loadIndex(const std::string &location, 
+                   SpaceInterface<dist_t> *s, 
+                   size_t max_elements_i = 0,
+                   void* pre_alloc_buff = NULL,
+                   size_t pre_alloc_size = 0) {
         std::ifstream input(location, std::ios::binary);
 
         if (!input.is_open())
@@ -774,9 +778,13 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
 
         input.seekg(pos, input.beg);
 
-        data_level0_memory_ = (char *) malloc(max_elements * size_data_per_element_);
-        if (data_level0_memory_ == nullptr)
-            throw std::runtime_error("Not enough memory: loadIndex failed to allocate level0");
+        if (pre_alloc_buff && pre_alloc_size > (max_elements * size_data_per_element_)) {
+            data_level0_memory_ = (char*) pre_alloc_buff;
+        } else {
+            data_level0_memory_ = (char *) malloc(max_elements * size_data_per_element_);
+            if (data_level0_memory_ == nullptr)
+                throw std::runtime_error("Not enough memory: loadIndex failed to allocate level0");
+        }
         input.read(data_level0_memory_, cur_element_count * size_data_per_element_);
 
         size_links_per_element_ = maxM_ * sizeof(tableint) + sizeof(linklistsizeint);
